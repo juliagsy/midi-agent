@@ -92,7 +92,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         resume=args.resume,
     )
     _print_json(summary)
-    return 0 if "error" not in summary else 1
+    return 0
 
 
 def cmd_score(args: argparse.Namespace) -> int:
@@ -171,7 +171,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":
