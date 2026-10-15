@@ -71,9 +71,7 @@ Run **g3** (plan-once with MCP analysis in the prompt). Action and scoring still
 ```bash
 midi-agent run ../musicinstruct/data/pilot/pilot.jsonl \
   --variant g3 \
-  --mcp-command python \
-  --mcp-arg -m \
-  --mcp-arg music21_mcp.server \
+  --mcp-server "python -m music21_mcp.server" \
   --model meta-llama/Llama-3.2-8B-Instruct \
   --output-dir results/g3_mcp \
   --split test \

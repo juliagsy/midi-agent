@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import sys
 from pathlib import Path
 
@@ -22,8 +23,19 @@ def _print_json(data: dict) -> None:
     print(json.dumps(data, indent=2))
 
 
-def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
+def _resolve_mcp_launch(args: argparse.Namespace) -> tuple[str, tuple[str, ...]]:
+    if args.mcp_server:
+        parts = shlex.split(args.mcp_server)
+        if not parts:
+            raise ValueError("empty --mcp-server")
+        return parts[0], tuple(parts[1:])
+    command = args.mcp_command or "python"
     mcp_args = tuple(args.mcp_arg) if args.mcp_arg else ("-m", "music21_mcp.server")
+    return command, mcp_args
+
+
+def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
+    command, mcp_args = _resolve_mcp_launch(args)
     tools: tuple[McpToolSpec, ...] | None = None
     if args.mcp_tool:
         parsed: list[McpToolSpec] = []
@@ -36,20 +48,20 @@ def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
         McpToolSpec("analyze_key", {"file_path": "{midi_path}"}),
     )
     return McpServerConfig(
-        command=args.mcp_command,
+        command=command,
         args=mcp_args,
         tools=tools or default_tools,
     )
 
 
 def _build_knowledge(args: argparse.Namespace):
-    use_mcp = args.variant == "g3" or args.mcp_command
+    use_mcp = args.variant == "g3" or args.mcp_command or args.mcp_server
     if not use_mcp:
         return TrackSummaryKnowledge()
-    if not args.mcp_command:
+    if not args.mcp_command and not args.mcp_server:
         print(
-            "Variant g3 requires an MCP server. Pass --mcp-command, e.g.\n"
-            "  --mcp-command python --mcp-arg -m --mcp-arg music21_mcp.server\n"
+            "Variant g3 requires an MCP server. Pass e.g.\n"
+            "  --mcp-server 'python -m music21_mcp.server'\n"
             "(after installing cclawton/music21-mcp or your fork)",
             file=sys.stderr,
         )
@@ -149,15 +161,20 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--temperature", type=float, default=0.0)
     run.add_argument("--hf-token", default=None)
     run.add_argument(
+        "--mcp-server",
+        default=None,
+        help="Stdio MCP launch command (shlex), e.g. 'python -m music21_mcp.server' (preferred for g3)",
+    )
+    run.add_argument(
         "--mcp-command",
         default=None,
-        help="Stdio MCP server executable (required for g3; optional enrich g1/g2/g4)",
+        help="MCP executable when not using --mcp-server (default: python)",
     )
     run.add_argument(
         "--mcp-arg",
         action="append",
         default=None,
-        help="Extra argv for MCP server (default: -m music21_mcp.server)",
+        help="Extra argv for MCP server; use --mcp-arg=-m if value starts with '-'",
     )
     run.add_argument(
         "--mcp-tool",
