@@ -93,7 +93,10 @@ class LlamaAgentClient:
         return self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
     def shutdown(self) -> None:
-        self.knowledge.close()
+        try:
+            self.knowledge.close()
+        except Exception:
+            pass
 
     def generate_plan(
         self,
