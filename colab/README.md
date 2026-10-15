@@ -43,4 +43,4 @@ Set **`DATASET_MODE`** and **`RUN_ID`** consistently:
 
 Timing (T4, **1B**, ~180 test items): roughly 2–3 h per variant (`g4` slower). **Do not use 8B on T4** — weights exceed VRAM; use 1B (notebook default) or A100+.
 
-**g3 (MCP knowledge):** install [music21-mcp](https://github.com/cclawton/music21-mcp) in the notebook and pass `--variant g3 --mcp-command python --mcp-arg -m --mcp-arg music21_mcp.server` plus `uv pip install -e '.[mcp]'`. MCP enriches the plan prompt only; edits still go through `execute_plan`.
+**MCP (notebook 03):** set `VARIANT="g3"` or `USE_MCP=True`. The notebook installs [music21-mcp](https://github.com/cclawton/music21-mcp), `midi-agent[llm,mcp]`, and `--mcp-command python -m music21_mcp.server`. Results sync to `agent_<variant>_mcp/` on Drive. MCP is perception-only; benchmark edits still use `execute_plan`.
