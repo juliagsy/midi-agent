@@ -82,6 +82,17 @@ midi-agent run ../musicinstruct/data/pilot/pilot.jsonl \
 
 You can pass `--mcp-command` on `g1`/`g2`/`g4` as well. Default tools: `parse_midi_file` and `analyze_key` with `{midi_path}` substituted per item. Override with `--mcp-tool '{"name":"analyze_key","arguments":{}}'`.
 
+### Repair truncated JSON (no LLM re-run)
+
+If the model emitted almost-valid JSON (missing closing `}`), updated `parse_plan_text` in musicinstruct can recover it. Re-execute failed rows from saved `raw_response`:
+
+```bash
+midi-agent reparse ../musicinstruct/data/v0.2/manifest.jsonl \
+  results/agent_g1/predictions.jsonl \
+  --output-dir results/agent_g1_repaired \
+  --split test
+```
+
 ## Google Colab
 
 Self-contained notebooks under [`colab/`](colab/README.md): setup + data restore, gold audit, T4 agent runs, and scoring. Dataset on Drive is shared with [musicinstruct](https://github.com/juliagsy/musicinstruct); artifacts go to `MyDrive/midi-agent/runs/<RUN_ID>/`.

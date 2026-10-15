@@ -14,6 +14,7 @@ from midi_agent.clients.oracle import OraclePlanClient
 from midi_agent.perception.base import TrackSummaryKnowledge
 from midi_agent.perception.mcp import McpKnowledgeProvider, McpServerConfig, McpToolSpec
 from midi_agent.runners.agent import run_agent_suite
+from midi_agent.runners.reparse import reparse_predictions
 from midi_agent.variants import VARIANT_DESCRIPTIONS, resolve_variant
 
 
@@ -31,8 +32,8 @@ def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
             parsed.append(McpToolSpec(name=payload["name"], arguments=payload.get("arguments", {})))
         tools = tuple(parsed)
     default_tools = (
-        McpToolSpec("parse_midi_file", {"midi_path": "{midi_path}"}),
-        McpToolSpec("analyze_key", {}),
+        McpToolSpec("parse_midi_file", {"file_path": "{midi_path}"}),
+        McpToolSpec("analyze_key", {"file_path": "{midi_path}"}),
     )
     return McpServerConfig(
         command=args.mcp_command,
@@ -114,6 +115,19 @@ def cmd_variants(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reparse(args: argparse.Namespace) -> int:
+    summary = reparse_predictions(
+        args.gold,
+        args.predictions,
+        args.output_dir,
+        split=args.split,
+        joint_threshold=args.joint_threshold,
+        only_failed=not args.all_items,
+    )
+    _print_json(summary)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="midi-agent", description="Tool-augmented MIDI editing agents")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -149,7 +163,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--mcp-tool",
         action="append",
         default=None,
-        help='JSON MCP tool call; default parse_midi_file + analyze_key with {midi_path}',
+        help='JSON MCP tool call; default parse_midi_file + analyze_key with file_path={midi_path}',
     )
     run.set_defaults(func=cmd_run)
 
@@ -164,6 +178,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     variants = sub.add_parser("variants", help="List supported agent variants")
     variants.set_defaults(func=cmd_variants)
+
+    reparse = sub.add_parser(
+        "reparse",
+        help="Re-parse raw_response in predictions, execute plans, rescore (no LLM)",
+    )
+    reparse.add_argument("gold", help="Gold manifest path")
+    reparse.add_argument("predictions", help="Source predictions.jsonl")
+    reparse.add_argument("--output-dir", required=True, help="Directory for repaired predictions + midi/")
+    reparse.add_argument("--split", default="test")
+    reparse.add_argument("--joint-threshold", type=float, default=0.9)
+    reparse.add_argument(
+        "--all-items",
+        action="store_true",
+        help="Re-execute all items, not only failed / missing midi_path",
+    )
+    reparse.set_defaults(func=cmd_reparse)
 
     return parser
 

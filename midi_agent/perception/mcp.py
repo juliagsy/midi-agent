@@ -31,13 +31,13 @@ class McpServerConfig:
     args: tuple[str, ...] = ()
     env: dict[str, str] | None = None
     tools: tuple[McpToolSpec, ...] = (
-        McpToolSpec("parse_midi_file", {"midi_path": _MIDI_PATH}),
-        McpToolSpec("analyze_key", {}),
+        McpToolSpec("parse_midi_file", {"file_path": _MIDI_PATH}),
+        McpToolSpec("analyze_key", {"file_path": _MIDI_PATH}),
     )
 
 
 def default_music21_mcp_config(command: str = "python", *extra_args: str) -> McpServerConfig:
-    """Preset aligned with cclawton/music21-mcp (MIDI parse + key analysis)."""
+    """Preset aligned with cclawton/music21-mcp (file_path + key analysis)."""
     args = ("-m", "music21_mcp.server", *extra_args)
     return McpServerConfig(command=command, args=args)
 
