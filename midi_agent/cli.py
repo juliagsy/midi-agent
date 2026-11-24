@@ -34,19 +34,64 @@ def _resolve_mcp_launch(args: argparse.Namespace) -> tuple[str, tuple[str, ...]]
     return command, mcp_args
 
 
+
 def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
     command, mcp_args = _resolve_mcp_launch(args)
+
     tools: tuple[McpToolSpec, ...] | None = None
     if args.mcp_tool:
         parsed: list[McpToolSpec] = []
         for raw in args.mcp_tool:
             payload = json.loads(raw)
-            parsed.append(McpToolSpec(name=payload["name"], arguments=payload.get("arguments", {})))
+            parsed.append(
+                McpToolSpec(
+                    name=payload["name"],
+                    arguments=payload.get("arguments", {}),
+                )
+            )
         tools = tuple(parsed)
+
     default_tools = (
-        McpToolSpec("parse_midi_file", {"file_path": "{midi_path}"}),
-        McpToolSpec("analyze_key", {"file_path": "{midi_path}"}),
+        McpToolSpec(
+            "import_score",
+            {
+                "score_id": "midi",
+                "source": "{midi_path}",
+                "source_type": "midi",
+            },
+        ),
+        McpToolSpec(
+            "analyze_key",
+            {
+                "score_id": "midi",
+                "algorithm": "all",
+            },
+        ),
+        McpToolSpec(
+            "analyze_chords",
+            {
+                "score_id": "midi",
+                "include_inversions": True,
+                "include_extensions": True,
+            },
+        ),
+        McpToolSpec(
+            "analyze_harmony",
+            {
+                "score_id": "midi",
+                "include_voice_leading": True,
+                "include_cadences": True,
+            },
+        ),
+        McpToolSpec(
+            "get_score_info",
+            {
+                "score_id": "midi",
+                "include_statistics": True,
+            },
+        ),
     )
+
     return McpServerConfig(
         command=command,
         args=mcp_args,

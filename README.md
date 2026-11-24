@@ -78,7 +78,7 @@ midi-agent run ../musicinstruct/data/pilot/pilot.jsonl \
   --max-items 5
 ```
 
-You can pass `--mcp-command` on `g1`/`g2`/`g4` as well. Default tools: `parse_midi_file` and `analyze_key` with `{midi_path}` substituted per item. Override with `--mcp-tool '{"name":"analyze_key","arguments":{}}'`.
+You can pass `--mcp-command` on `g1`/`g2`/`g4` as well. Default tools: `import_score`, `analyze_key`, `analyze_chords`, and `analyze_harmony`, using the shared `score_id` (`midi`). The MIDI file path is substituted into `import_score` via `{midi_path}`; subsequent analysis tools operate on the imported score. Override with `--mcp-tool '{"name":"analyze_key","arguments":{}}'`.
 
 ### Repair truncated JSON (no LLM re-run)
 

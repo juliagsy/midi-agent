@@ -32,8 +32,37 @@ class McpServerConfig:
     args: tuple[str, ...] = ()
     env: dict[str, str] | None = None
     tools: tuple[McpToolSpec, ...] = (
-        McpToolSpec("parse_midi_file", {"file_path": _MIDI_PATH}),
-        McpToolSpec("analyze_key", {"file_path": _MIDI_PATH}),
+        McpToolSpec(
+            "import_score",
+            {
+                "score_id": "midi",
+                "source": _MIDI_PATH,
+                "source_type": "midi",
+            },
+        ),
+        McpToolSpec(
+            "analyze_key",
+            {
+                "score_id": "midi",
+                "algorithm": "all",
+            },
+        ),
+        McpToolSpec(
+            "analyze_chords",
+            {
+                "score_id": "midi",
+                "include_inversions": True,
+                "include_extensions": True,
+            },
+        ),
+        McpToolSpec(
+            "analyze_harmony",
+            {
+                "score_id": "midi",
+                "include_voice_leading": True,
+                "include_cadences": True,
+            },
+        ),
     )
 
 
