@@ -30,7 +30,7 @@ def _resolve_mcp_launch(args: argparse.Namespace) -> tuple[str, tuple[str, ...]]
             raise ValueError("empty --mcp-server")
         return parts[0], tuple(parts[1:])
     command = args.mcp_command or "python"
-    mcp_args = tuple(args.mcp_arg) if args.mcp_arg else ("-m", "music21_mcp.server")
+    mcp_args = tuple(args.mcp_arg) if args.mcp_arg else ("-m", "music21_mcp.server_minimal")
     return command, mcp_args
 
 
@@ -61,33 +61,28 @@ def _build_mcp_config(args: argparse.Namespace) -> McpServerConfig:
             },
         ),
         McpToolSpec(
-            "analyze_key",
+            "key_analysis",
             {
                 "score_id": "midi",
-                "algorithm": "all",
             },
         ),
         McpToolSpec(
-            "analyze_chords",
+            "chord_analysis",
             {
                 "score_id": "midi",
-                "include_inversions": True,
-                "include_extensions": True,
             },
         ),
         McpToolSpec(
-            "analyze_harmony",
+            "harmony_analysis",
             {
                 "score_id": "midi",
-                "include_voice_leading": True,
-                "include_cadences": True,
+                "analysis_type": "roman",
             },
         ),
         McpToolSpec(
-            "get_score_info",
+            "score_info",
             {
                 "score_id": "midi",
-                "include_statistics": True,
             },
         ),
     )
