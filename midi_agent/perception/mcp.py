@@ -24,6 +24,7 @@ class McpToolSpec:
     arguments: dict[str, Any] = field(default_factory=dict)
 
 
+
 @dataclass(frozen=True)
 class McpServerConfig:
     """Stdio MCP server launch configuration."""
@@ -41,34 +42,41 @@ class McpServerConfig:
             },
         ),
         McpToolSpec(
-            "analyze_key",
+            "key_analysis",
             {
                 "score_id": "midi",
-                "algorithm": "all",
             },
         ),
         McpToolSpec(
-            "analyze_chords",
+            "chord_analysis",
             {
                 "score_id": "midi",
-                "include_inversions": True,
-                "include_extensions": True,
             },
         ),
         McpToolSpec(
-            "analyze_harmony",
+            "harmony_analysis",
             {
                 "score_id": "midi",
-                "include_voice_leading": True,
-                "include_cadences": True,
+                "analysis_type": "roman",
+            },
+        ),
+        McpToolSpec(
+            "score_info",
+            {
+                "score_id": "midi",
             },
         ),
     )
 
 
-def default_music21_mcp_config(command: str = "python", *extra_args: str) -> McpServerConfig:
-    """Preset aligned with cclawton/music21-mcp (file_path + key analysis)."""
-    args = ("-m", "music21_mcp.server", *extra_args)
+
+def default_music21_mcp_config(
+    command: str = "python",
+    *extra_args: str,
+) -> McpServerConfig:
+    """Preset aligned with brightlikethelight/music21-mcp-server."""
+
+    args = ("-m", "music21_mcp.server_minimal", *extra_args)
     return McpServerConfig(command=command, args=args)
 
 
@@ -163,20 +171,35 @@ class McpKnowledgeProvider:
         errors: list[str] = []
 
         listed = await self._session.list_tools()
-        available = {_normalize_tool_name(t.name): t.name for t in listed.tools}
+
+        available = {
+            _normalize_tool_name(tool.name): tool.name
+            for tool in listed.tools
+        }
+
+        if not available:
+            errors.append("server_returned_no_tools")
 
         for spec in self._config.tools:
             canonical = _normalize_tool_name(spec.name)
-            tool_name = available.get(canonical) or available.get(spec.name) or spec.name
-            if canonical not in available and spec.name not in available.values():
-                errors.append(f"tool_not_found:{spec.name}")
+            tool_name = available.get(canonical)
+
+            if tool_name is None:
+                errors.append(
+                    f"tool_not_found:{spec.name}; "
+                    f"available_tools={sorted(available.values())}"
+                )
                 continue
+
             arguments = _substitute_arguments(spec.arguments, resolved_path)
+
             try:
                 result = await self._session.call_tool(tool_name, arguments)
                 payload = _tool_result_payload(result)
-                tool_results[canonical] = payload if payload is not None else {"ok": True}
-            except Exception as exc:  # noqa: BLE001 — collect per-tool failures
+                tool_results[canonical] = (
+                    payload if payload is not None else {"ok": True}
+                )
+            except Exception as exc:
                 errors.append(f"{spec.name}:{exc}")
                 if not self._fallback_on_error:
                     raise
